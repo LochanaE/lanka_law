@@ -1,0 +1,10 @@
+{
+  "appTitle": "AI Legal Assistant",
+  "chatHint": "Type your legal question...",
+  "disclaimer": "This app provides general legal information only, not professional advice.",
+  "topicMarriage": "Marriage Registration",
+  "topicLand": "Land Dispute",
+  "topicEPF": "EPF/ETF Claims",
+  "welcomeMessage": "Hello! I am your AI Legal Assistant. How can I help you today?",
+  "aiResponse": "I can help you understand Sri Lankan laws regarding marriage, property, and labor. Please note that this is for informational purposes only."
+}
