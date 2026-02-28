@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lanka_law/theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 
 class SplashScreen extends StatefulWidget {
@@ -42,10 +43,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     bool? seenOnboarding = prefs.getBool('seenOnboarding');
 
     if (mounted) {
+      // Check auth state persistence
+      if (FirebaseAuth.instance.currentUser != null) {
+        Navigator.pushReplacementNamed(context, '/home');
+        return;
+      }
+
       if (seenOnboarding == true) {
         // Always show onboarding if not logged in (or you could check seenOnboarding if you wanted to skip to welcome)
         // For this requirement: Splash -> Onboarding
         Navigator.pushReplacementNamed(context, '/onboarding');
+      } else {
+        // Default to welcome screen if no onboarding state is set, preventing splash lock
+        Navigator.pushReplacementNamed(context, '/welcome');
       }
     }
   }

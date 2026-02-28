@@ -91,15 +91,19 @@ class AuthService {
   Exception _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
-        return Exception('No user found for that email.');
       case 'wrong-password':
-        return Exception('Wrong password provided for that user.');
+      case 'invalid-credential':
+        return Exception('Invalid email or password provided.');
       case 'email-already-in-use':
         return Exception('The account already exists for that email.');
       case 'weak-password':
         return Exception('The password provided is too weak.');
       case 'invalid-email':
         return Exception('The email address is not valid.');
+      case 'network-request-failed':
+        return Exception('Network error. Please check your internet connection.');
+      case 'too-many-requests':
+        return Exception('Too many login attempts. Please try again later.');
       default:
         return Exception(e.message ?? 'An authentication error occurred.');
     }
