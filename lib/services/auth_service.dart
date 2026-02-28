@@ -35,25 +35,29 @@ class AuthService {
     required String role,
   }) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
+
       // Update Display Name
       if (userCredential.user != null) {
         await userCredential.user!.updateDisplayName(name);
-        await userCredential.user!.reload();
         
-        // Save user data to Firestore
-        await saveUserToFirestore(
-          uid: userCredential.user!.uid,
-          name: name,
-          email: email,
-          role: role,
-        );
+        try {
+          // Save user data to Firestore with a timeout to prevent UI hanging
+          await saveUserToFirestore(
+            uid: userCredential.user!.uid,
+            name: name,
+            email: email,
+            role: role,
+          ).timeout(const Duration(seconds: 5));
+        } catch (e) {
+          print("Firestore timeout or error: $e");
+        }
+
+        // To require the user to log in after registration, sign them out initially
+        await _auth.signOut();
       }
-      
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -91,15 +95,21 @@ class AuthService {
   Exception _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
-        return Exception('No user found for that email.');
       case 'wrong-password':
-        return Exception('Wrong password provided for that user.');
+      case 'invalid-credential':
+        return Exception('Invalid email or password provided.');
       case 'email-already-in-use':
         return Exception('The account already exists for that email.');
       case 'weak-password':
         return Exception('The password provided is too weak.');
       case 'invalid-email':
         return Exception('The email address is not valid.');
+      case 'network-request-failed':
+        return Exception(
+          'Network error. Please check your internet connection.',
+        );
+      case 'too-many-requests':
+        return Exception('Too many login attempts. Please try again later.');
       default:
         return Exception(e.message ?? 'An authentication error occurred.');
     }
@@ -108,8 +118,10 @@ class AuthService {
   // Get User Role
   Future<String?> getUserRole(String uid) async {
     try {
-      DocumentSnapshot doc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
       if (doc.exists && doc.data() != null) {
         return (doc.data() as Map<String, dynamic>)['role'] as String?;
       }
