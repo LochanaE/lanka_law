@@ -41,7 +41,7 @@ class AuthService {
       // Update Display Name
       if (userCredential.user != null) {
         await userCredential.user!.updateDisplayName(name);
-        
+
         try {
           // Save user data to Firestore with a timeout to prevent UI hanging
           await saveUserToFirestore(
@@ -129,5 +129,13 @@ class AuthService {
       print("Error fetching user role: $e");
     }
     return null;
+  }
+
+  // Get Firebase ID token (for backend authorization)
+  Future<String?> getIdToken() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return await user
+        .getIdToken(); // optionally: getIdToken(true) to force refresh
   }
 }
