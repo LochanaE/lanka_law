@@ -26,4 +26,24 @@ class ChatMessage {
     this.retrievalQuery,
     this.sources,
   });
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    List<ChatSource> sources = [];
+    if (json['sources'] != null) {
+      sources = (json['sources'] as List)
+          .map((e) => ChatSource.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+
+    final isUser = json['role'] == 'user' || json['isUser'] == true || json['is_user'] == true;
+    final text = (json['answer'] ?? json['text'] ?? json['content'] ?? '').toString();
+
+    return ChatMessage(
+      text: text,
+      isUser: isUser,
+      lang: json['lang'] as String?,
+      retrievalQuery: (json['retrieval_query'] ?? json['retrievalQuery']) as String?,
+      sources: sources,
+    );
+  }
 }

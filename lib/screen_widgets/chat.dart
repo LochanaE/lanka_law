@@ -5,10 +5,13 @@ import 'package:lanka_law/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:lanka_law/services/language_provider.dart';
 import 'package:lanka_law/models/chat_message.dart';
-import 'package:lanka_law/services/chat_service.dart';
+import 'package:lanka_law/services/messages_service.dart';
 
 class chat extends StatefulWidget {
-  const chat({super.key});
+  final String threadId;
+  final String threadTitle;
+
+  const chat({super.key, required this.threadId, required this.threadTitle});
 
   @override
   State<chat> createState() => _chatState();
@@ -16,19 +19,52 @@ class chat extends StatefulWidget {
 
 class _chatState extends State<chat> {
   final List<ChatMessage> messages = [];
-  bool _initialized = false;
   bool _isLoading = false;
-  final ChatService _chatService = ChatService();
 
   final TextEditingController inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initialized) {
-      messages.add(ChatMessage(text: AppLocalizations.of(context)!.welcomeMessage, isUser: false));
-      _initialized = true;
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadMessages();
+    });
+  }
+
+  Future<void> _loadMessages() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final messagesService = Provider.of<MessagesService>(context, listen: false);
+      final oldMessages = await messagesService.getMessages(widget.threadId);
+      
+      if (mounted) {
+        setState(() {
+          messages.clear();
+          if (oldMessages.isEmpty) {
+             messages.add(ChatMessage(text: AppLocalizations.of(context)!.welcomeMessage, isUser: false));
+          } else {
+             messages.addAll(oldMessages);
+          }
+          _isLoading = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (messages.isEmpty) {
+             messages.add(ChatMessage(text: AppLocalizations.of(context)!.welcomeMessage, isUser: false));
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load messages: $e')),
+        );
+      }
     }
   }
 
@@ -51,7 +87,8 @@ class _chatState extends State<chat> {
     _scrollToBottom();
 
     try {
-      final responseMessage = await _chatService.sendMessage(text);
+      final messagesService = Provider.of<MessagesService>(context, listen: false);
+      final responseMessage = await messagesService.sendMessage(widget.threadId, text);
       if (mounted) {
         setState(() {
           messages.add(responseMessage);
@@ -91,7 +128,7 @@ class _chatState extends State<chat> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)!.appTitle,
+          widget.threadTitle,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             fontSize: 18,
