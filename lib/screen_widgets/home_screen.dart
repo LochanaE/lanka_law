@@ -200,7 +200,7 @@ class HomeScreen extends StatelessWidget {
                                   .blue
                                   .shade50, // Should update to be more subtle
                               iconColor: Colors.blue.shade700,
-                              onTap: () => Navigator.pushNamed(context, '/chat'),
+                              onTap: () => Navigator.pushNamed(context, '/chat_list'),
                               isPrimary: true,
                             ),
                             _buildFeatureCard(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lanka_law/screen_widgets/chat_list_screen.dart';
 import 'package:lanka_law/screen_widgets/chat.dart';
 import 'package:lanka_law/screen_widgets/splash_screen.dart';
 import 'package:lanka_law/screen_widgets/onboarding_screen.dart';
@@ -12,6 +12,11 @@ import 'package:lanka_law/screen_widgets/document_templates_screen.dart';
 import 'package:lanka_law/screen_widgets/settings_screen.dart';
 import 'package:lanka_law/screen_widgets/welcome_screen.dart';
 import 'package:lanka_law/theme.dart';
+
+import 'package:lanka_law/services/auth_service.dart';
+import 'package:lanka_law/services/api_client.dart';
+import 'package:lanka_law/services/threads_service.dart';
+import 'package:lanka_law/services/messages_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -37,7 +42,19 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => LanguageProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        Provider<AuthService>(create: (_) => AuthService()),
+        ProxyProvider<AuthService, ApiClient>(
+          update: (_, auth, __) => ApiClient(auth: auth),
+        ),
+        ProxyProvider<ApiClient, ThreadsService>(
+          update: (_, api, __) => ThreadsService(api),
+        ),
+        ProxyProvider<ApiClient, MessagesService>(
+          update: (_, api, __) => MessagesService(api),
+        ),
+      ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: AppTheme.themeNotifier,
         builder: (context, mode, child) {
@@ -68,7 +85,7 @@ void main() async {
                   "/login": (context) => const LoginScreen(),
                   "/register": (context) => const RegisterScreen(),
                   "/home": (context) => const HomeScreen(),
-                  "/chat": (context) => chat(),
+                  "/chat_list": (context) => const ChatListScreen(),
                   "/profile": (context) => const ProfileScreen(),
                   "/document_library": (context) =>
                       const DocumentLibraryScreen(),
