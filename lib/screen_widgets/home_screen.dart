@@ -63,9 +63,7 @@ class HomeScreen extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.zero,
             child: Container(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-              ),
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
               color: AppTheme.backgroundColor,
               child: Column(
                 children: [
@@ -93,10 +91,8 @@ class HomeScreen extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           "Your Legal Assistant",
-                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                            color: Colors.white,
-                            height: 1.2,
-                          ),
+                          style: Theme.of(context).textTheme.displayMedium
+                              ?.copyWith(color: Colors.white, height: 1.2),
                         ),
                         const SizedBox(height: 30),
                         // Daily Tip Card
@@ -166,24 +162,27 @@ class HomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
                               "Services",
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
+                            GestureDetector(
+                              onTap: () {},
+                              child: const Icon(
                                 Icons.more_horiz_rounded,
                                 color: Colors.grey,
+                                size: 22,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+
                         GridView.count(
                           crossAxisCount: 2,
                           shrinkWrap: true,
@@ -196,11 +195,10 @@ class HomeScreen extends StatelessWidget {
                               context,
                               icon: Icons.chat_bubble_outline_rounded,
                               title: "AI Legal\nAssistant",
-                              color: Colors
-                                  .blue
-                                  .shade50, // Should update to be more subtle
+                              color: Colors.blue.shade50,
                               iconColor: Colors.blue.shade700,
-                              onTap: () => Navigator.pushNamed(context, '/chat_list'),
+                              onTap: () =>
+                                  Navigator.pushNamed(context, '/chat_list'),
                               isPrimary: true,
                             ),
                             _buildFeatureCard(
@@ -209,7 +207,10 @@ class HomeScreen extends StatelessWidget {
                               title: "Document\nLibrary",
                               color: Colors.orange.shade50,
                               iconColor: Colors.orange.shade700,
-                              onTap: () => Navigator.pushNamed(context, '/document_library'),
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                '/document_library',
+                              ),
                             ),
                             _buildFeatureCard(
                               context,
@@ -217,7 +218,10 @@ class HomeScreen extends StatelessWidget {
                               title: "Document\nTemplates",
                               color: Colors.purple.shade50,
                               iconColor: Colors.purple.shade700,
-                              onTap: () => Navigator.pushNamed(context, '/document_templates'),
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                '/document_templates',
+                              ),
                             ),
                             _buildFeatureCard(
                               context,
@@ -225,7 +229,7 @@ class HomeScreen extends StatelessWidget {
                               title: "Chat\nHistory",
                               color: Colors.green.shade50,
                               iconColor: Colors.green.shade700,
-                              onTap: () {}, // Placeholder
+                              onTap: () {},
                             ),
                             _buildFeatureCard(
                               context,
@@ -233,7 +237,7 @@ class HomeScreen extends StatelessWidget {
                               title: "Legal Aid\nFinder",
                               color: Colors.red.shade50,
                               iconColor: Colors.red.shade700,
-                              onTap: () {}, // Placeholder
+                              onTap: () {},
                             ),
                             _buildFeatureCard(
                               context,
@@ -241,13 +245,14 @@ class HomeScreen extends StatelessWidget {
                               title: "Settings",
                               color: Colors.grey.shade100,
                               iconColor: Colors.grey.shade700,
-                              onTap: () {}, // Placeholder
+                              onTap: () {},
                             ),
                           ],
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 30),
                 ],
               ),
