@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lanka_law/theme.dart';
 import 'package:lanka_law/screen_widgets/gazette/gazettes_view.dart';
+import 'package:lanka_law/screen_widgets/acts/acts_view.dart';
 
 class DocumentLibraryScreen extends StatefulWidget {
   const DocumentLibraryScreen({super.key});
@@ -199,6 +200,8 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                   // Content switching logic
                   if (categories[selectedCategoryIndex] == "Gazettes")
                     const GazettesView()
+                  else if (categories[selectedCategoryIndex] == "Acts")
+                    const ActsView()
                   else ...[
                     // Recent Documents Header
                     Padding(
