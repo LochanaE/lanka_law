@@ -1,21 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:lanka_law/theme.dart';
+import '../../models/gazette_item.dart';
+import '../../services/gazette_api_service.dart';
+import '../pdf_viewer_screen.dart';
 
-class ExtraordinaryGazetteCard extends StatelessWidget {
-  final String issueNumber;
-  final String date;
-  final String subject;
+class ExtraordinaryGazetteCard extends StatefulWidget {
+  final GazetteItem item;
+  final int selectedYear;
 
   const ExtraordinaryGazetteCard({
     super.key,
-    required this.issueNumber,
-    required this.date,
-    required this.subject,
+    required this.item,
+    required this.selectedYear,
   });
 
   @override
+  State<ExtraordinaryGazetteCard> createState() => _ExtraordinaryGazetteCardState();
+}
+
+class _ExtraordinaryGazetteCardState extends State<ExtraordinaryGazetteCard> {
+  bool _isLoading = false;
+  String? _loadingLang;
+
+  Future<void> _openLanguagePdf(String langCode) async {
+    setState(() {
+      _isLoading = true;
+      _loadingLang = langCode;
+    });
+
+    try {
+      final service = GazetteApiService();
+      // Fetch gazettes for this language and matching issueNo
+      final list = await service.fetchGazettes(
+        type: 'extraordinary',
+        lang: langCode.toLowerCase(),
+        year: widget.selectedYear,
+      );
+
+      final matching = list.where((e) => e.issueNo == widget.item.issueNo).toList();
+
+      if (matching.isNotEmpty) {
+        final targetItem = matching.first;
+        final url = await service.fetchSignedUrl(targetItem.id);
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PdfViewerScreen(
+                url: url,
+                title: targetItem.title,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No $langCode version found for this issue.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load PDF: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadingLang = null;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final dateStr = widget.item.publishedDate != null
+        ? DateFormat('dd MMM yyyy').format(widget.item.publishedDate!)
+        : 'Unknown Date';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -48,7 +116,7 @@ class ExtraordinaryGazetteCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      issueNumber,
+                      widget.item.issueNo ?? '-',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -62,7 +130,7 @@ class ExtraordinaryGazetteCard extends StatelessWidget {
                       Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
                       Text(
-                        date,
+                        dateStr,
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -75,7 +143,7 @@ class ExtraordinaryGazetteCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                subject,
+                widget.item.title,
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -92,11 +160,23 @@ class ExtraordinaryGazetteCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  _LanguageButton(lang: "EN", onTap: () {}),
+                  _LanguageButton(
+                    lang: "EN",
+                    isLoading: _isLoading && _loadingLang == "EN",
+                    onTap: _isLoading ? null : () => _openLanguagePdf("EN"),
+                  ),
                   const SizedBox(width: 8),
-                  _LanguageButton(lang: "SI", onTap: () {}),
+                  _LanguageButton(
+                    lang: "SI",
+                    isLoading: _isLoading && _loadingLang == "SI",
+                    onTap: _isLoading ? null : () => _openLanguagePdf("SI"),
+                  ),
                   const SizedBox(width: 8),
-                  _LanguageButton(lang: "TA", onTap: () {}),
+                  _LanguageButton(
+                    lang: "TA",
+                    isLoading: _isLoading && _loadingLang == "TA",
+                    onTap: _isLoading ? null : () => _openLanguagePdf("TA"),
+                  ),
                 ],
               ),
             ],
@@ -109,9 +189,14 @@ class ExtraordinaryGazetteCard extends StatelessWidget {
 
 class _LanguageButton extends StatelessWidget {
   final String lang;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool isLoading;
 
-  const _LanguageButton({required this.lang, required this.onTap});
+  const _LanguageButton({
+    required this.lang,
+    required this.onTap,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -119,19 +204,30 @@ class _LanguageButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        width: 40,
+        height: 32,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          lang,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.primaryColor,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppTheme.primaryColor,
+                ),
+              )
+            : Text(
+                lang,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
       ),
     );
   }
