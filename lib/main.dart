@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lanka_law/screen_widgets/chat_list_screen.dart';
-import 'package:lanka_law/screen_widgets/chat.dart';
 import 'package:lanka_law/screen_widgets/splash_screen.dart';
 import 'package:lanka_law/screen_widgets/onboarding_screen.dart';
 import 'package:lanka_law/screen_widgets/home_screen.dart';

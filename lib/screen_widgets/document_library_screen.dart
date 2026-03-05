@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lanka_law/theme.dart';
+import 'package:lanka_law/screen_widgets/gazette/gazettes_view.dart';
 
 class DocumentLibraryScreen extends StatefulWidget {
   const DocumentLibraryScreen({super.key});
@@ -195,169 +196,174 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
 
                   const SizedBox(height: 30),
 
-                  // Recent Documents Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Recent Documents",
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: AppTheme.textDark,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                  // Content switching logic
+                  if (categories[selectedCategoryIndex] == "Gazettes")
+                    const GazettesView()
+                  else ...[
+                    // Recent Documents Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Recent Documents",
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppTheme.textDark,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppTheme.primaryColor,
-                          ),
-                          child: Text(
-                            "See All",
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                          TextButton(
+                            onPressed: () {},
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.primaryColor,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Documents List
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: documents.length,
-                    itemBuilder: (context, index) {
-                      final doc = documents[index];
-                      // Filter logic (simple)
-                      if (selectedCategoryIndex != 0 &&
-                          categories[selectedCategoryIndex] != doc['category']) {
-                        return const SizedBox.shrink(); // Ideally update list, but this works for simple demo
-                      }
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            onTap: () {},
-                            borderRadius: BorderRadius.circular(16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 50,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                      color: (doc['color'] as Color).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      doc['icon'],
-                                      color: doc['color'],
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          doc['title'],
-                                          style: GoogleFonts.inter(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppTheme.textDark,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Wrap(
-                                          crossAxisAlignment: WrapCrossAlignment.center,
-                                          spacing: 8,
-                                          runSpacing: 4,
-                                          children: [
-                                            Text(
-                                              doc['category'],
-                                              style: GoogleFonts.inter(
-                                                fontSize: 12,
-                                                color: AppTheme.primaryColor,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            Container(
-                                              width: 3,
-                                              height: 3,
-                                              decoration: const BoxDecoration(
-                                                color: Colors.grey,
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            Text(
-                                              doc['size'],
-                                              style: GoogleFonts.inter(
-                                                fontSize: 12,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                            Container(
-                                              width: 3,
-                                              height: 3,
-                                              decoration: const BoxDecoration(
-                                                color: Colors.grey,
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            Text(
-                                              doc['date'],
-                                              style: GoogleFonts.inter(
-                                                fontSize: 12,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.more_vert_rounded,
-                                      color: Colors.grey,
-                                    ),
-                                    onPressed: () {},
-                                  ),
-                                ],
+                            child: Text(
+                              "See All",
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Documents List (Generic)
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: documents.length,
+                      itemBuilder: (context, index) {
+                        final doc = documents[index];
+                        // Filter logic (simple)
+                        if (selectedCategoryIndex != 0 &&
+                            categories[selectedCategoryIndex] != doc['category']) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              onTap: () {},
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: (doc['color'] as Color).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        doc['icon'],
+                                        color: doc['color'],
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            doc['title'],
+                                            style: GoogleFonts.inter(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppTheme.textDark,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Wrap(
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            children: [
+                                              Text(
+                                                doc['category'],
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  color: AppTheme.primaryColor,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              Container(
+                                                width: 3,
+                                                height: 3,
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.grey,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              Text(
+                                                doc['size'],
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                              Container(
+                                                width: 3,
+                                                height: 3,
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.grey,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              Text(
+                                                doc['date'],
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.more_vert_rounded,
+                                        color: Colors.grey,
+                                      ),
+                                      onPressed: () {},
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   
                   // Ensure space at bottom
                   const SizedBox(height: 30),
