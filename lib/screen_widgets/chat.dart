@@ -38,16 +38,24 @@ class _chatState extends State<chat> {
     });
 
     try {
-      final messagesService = Provider.of<MessagesService>(context, listen: false);
+      final messagesService = Provider.of<MessagesService>(
+        context,
+        listen: false,
+      );
       final oldMessages = await messagesService.getMessages(widget.threadId);
-      
+
       if (mounted) {
         setState(() {
           messages.clear();
           if (oldMessages.isEmpty) {
-             messages.add(ChatMessage(text: AppLocalizations.of(context)!.welcomeMessage, isUser: false));
+            messages.add(
+              ChatMessage(
+                text: AppLocalizations.of(context)!.welcomeMessage,
+                isUser: false,
+              ),
+            );
           } else {
-             messages.addAll(oldMessages);
+            messages.addAll(oldMessages);
           }
           _isLoading = false;
         });
@@ -58,12 +66,17 @@ class _chatState extends State<chat> {
         setState(() {
           _isLoading = false;
           if (messages.isEmpty) {
-             messages.add(ChatMessage(text: AppLocalizations.of(context)!.welcomeMessage, isUser: false));
+            messages.add(
+              ChatMessage(
+                text: AppLocalizations.of(context)!.welcomeMessage,
+                isUser: false,
+              ),
+            );
           }
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load messages: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load messages: $e')));
       }
     }
   }
@@ -78,7 +91,7 @@ class _chatState extends State<chat> {
   void sendMessage() async {
     final text = inputController.text.trim();
     if (text.isEmpty) return;
-    
+
     setState(() {
       messages.add(ChatMessage(text: text, isUser: true));
       inputController.clear();
@@ -87,8 +100,14 @@ class _chatState extends State<chat> {
     _scrollToBottom();
 
     try {
-      final messagesService = Provider.of<MessagesService>(context, listen: false);
-      final responseMessage = await messagesService.sendMessage(widget.threadId, text);
+      final messagesService = Provider.of<MessagesService>(
+        context,
+        listen: false,
+      );
+      final responseMessage = await messagesService.sendMessage(
+        widget.threadId,
+        text,
+      );
       if (mounted) {
         setState(() {
           messages.add(responseMessage);
@@ -99,10 +118,12 @@ class _chatState extends State<chat> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          messages.add(ChatMessage(
-            text: e.toString().replaceAll('Exception: ', ''),
-            isUser: false,
-          ));
+          messages.add(
+            ChatMessage(
+              text: e.toString().replaceAll('Exception: ', ''),
+              isUser: false,
+            ),
+          );
           _isLoading = false;
         });
         _scrollToBottom();
@@ -140,16 +161,9 @@ class _chatState extends State<chat> {
         iconTheme: Theme.of(context).iconTheme,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: Colors.grey.shade200,
-            height: 1.0,
-          ),
+          child: Container(color: Colors.grey.shade200, height: 1.0),
         ),
-        actions: const [
-          ThemeToggle(),
-          SizedBox(width: 8),
-          LanguageToggle(),
-        ],
+        actions: const [ThemeToggle(), SizedBox(width: 8), LanguageToggle()],
       ),
       body: Column(
         children: [
@@ -187,7 +201,7 @@ class _chatState extends State<chat> {
               topics: [
                 AppLocalizations.of(context)!.topicMarriage,
                 AppLocalizations.of(context)!.topicLand,
-                AppLocalizations.of(context)!.topicEPF
+                AppLocalizations.of(context)!.topicEPF,
               ],
               onTopicSelected: (topic) {
                 inputController.text = topic;
@@ -218,15 +232,23 @@ class _chatState extends State<chat> {
                             hintText: AppLocalizations.of(context)!.chatHint,
                             hintStyle: GoogleFonts.inter(color: Colors.grey),
                             filled: true,
-                            fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                            fillColor: Theme.of(
+                              context,
+                            ).inputDecorationTheme.fillColor,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                            suffixIcon: inputController.text.isNotEmpty 
-                              ? IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: inputController.clear)
-                              : null,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
+                            suffixIcon: inputController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 16),
+                                    onPressed: inputController.clear,
+                                  )
+                                : null,
                           ),
                           onSubmitted: (_) => sendMessage(),
                         ),
@@ -238,7 +260,11 @@ class _chatState extends State<chat> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                          icon: const Icon(
+                            Icons.send_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           onPressed: sendMessage,
                         ),
                       ),
@@ -271,7 +297,9 @@ class ChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -281,7 +309,11 @@ class ChatBubble extends StatelessWidget {
                 color: AppTheme.accentColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.smart_toy_rounded, size: 16, color: AppTheme.accentColor),
+              child: const Icon(
+                Icons.smart_toy_rounded,
+                size: 16,
+                color: AppTheme.accentColor,
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -289,7 +321,11 @@ class ChatBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: isUser ? AppTheme.primaryColor : (Theme.of(context).brightness == Brightness.dark ? AppTheme.primaryLight : Colors.white),
+                color: isUser
+                    ? AppTheme.primaryColor
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.primaryLight
+                          : Colors.white),
                 gradient: isUser ? AppTheme.primaryGradient : null,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(20),
@@ -308,7 +344,9 @@ class ChatBubble extends StatelessWidget {
               child: Text(
                 message,
                 style: GoogleFonts.inter(
-                  color: isUser ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color,
+                  color: isUser
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyLarge?.color,
                   fontSize: 15,
                   height: 1.4,
                 ),
@@ -316,12 +354,12 @@ class ChatBubble extends StatelessWidget {
             ),
           ),
           if (isUser) ...[
-             const SizedBox(width: 8),
-             const CircleAvatar(
-               radius: 16,
-               backgroundColor: AppTheme.backgroundColor,
-               child: Icon(Icons.person, size: 16, color: AppTheme.primaryColor),
-             ),
+            const SizedBox(width: 8),
+            const CircleAvatar(
+              radius: 16,
+              backgroundColor: AppTheme.backgroundColor,
+              child: Icon(Icons.person, size: 16, color: AppTheme.primaryColor),
+            ),
           ],
         ],
       ),
@@ -343,14 +381,8 @@ class LanguageToggle extends StatelessWidget {
           value: Locale('en'),
           child: Text('English'),
         ),
-        const PopupMenuItem<Locale>(
-          value: Locale('si'),
-          child: Text('සිංහල'),
-        ),
-        const PopupMenuItem<Locale>(
-          value: Locale('ta'),
-          child: Text('தமிழ்'),
-        ),
+        const PopupMenuItem<Locale>(value: Locale('si'), child: Text('සිංහල')),
+        const PopupMenuItem<Locale>(value: Locale('ta'), child: Text('தமிழ்')),
       ],
       offset: const Offset(0, 40),
       child: Padding(
@@ -365,7 +397,11 @@ class LanguageToggle extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.language, size: 16, color: AppTheme.primaryColor),
+                const Icon(
+                  Icons.language,
+                  size: 16,
+                  color: AppTheme.primaryColor,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _getLanguageCode(context),
@@ -420,9 +456,9 @@ class ThemeToggle extends StatelessWidget {
 class SuggestedTopicsRow extends StatelessWidget {
   final List<String> topics;
   final Function(String) onTopicSelected;
-  
+
   const SuggestedTopicsRow({
-    super.key, 
+    super.key,
     required this.topics,
     required this.onTopicSelected,
   });
@@ -445,8 +481,12 @@ class SuggestedTopicsRow extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                   backgroundColor: Colors.white,
-                  side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.2)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  side: BorderSide(
+                    color: AppTheme.primaryColor.withOpacity(0.2),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   onPressed: () => onTopicSelected(t),
                 ),
               ),

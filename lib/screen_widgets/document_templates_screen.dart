@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lanka_law/theme.dart';
+import 'package:lanka_law/models/template_model.dart';
+import 'package:lanka_law/data/template_data.dart';
+import 'package:lanka_law/screen_widgets/template_preview_screen.dart';
 
 class DocumentTemplatesScreen extends StatefulWidget {
   const DocumentTemplatesScreen({super.key});
@@ -21,68 +24,35 @@ class _DocumentTemplatesScreenState extends State<DocumentTemplatesScreen> {
   ];
   int selectedCategoryIndex = 0;
 
-  final List<Map<String, dynamic>> featuredTemplates = [
-    {
-      "title": "Non-Disclosure Agreement (NDA)",
-      "category": "Business",
-      "downloads": "2.5k+",
-      "color": Colors.indigo,
-      "icon": Icons.security_rounded,
-    },
-    {
-      "title": "House Rental Agreement",
-      "category": "Real Estate",
-      "downloads": "5k+",
-      "color": Colors.teal,
-      "icon": Icons.home_work_rounded,
-    },
-    {
-      "title": "Last Will & Testament",
-      "category": "Personal",
-      "downloads": "1.2k+",
-      "color": Colors.blueGrey,
-      "icon": Icons.history_edu_rounded,
-    },
-  ];
+  // Configuration maps for subcategories and indices
+  final Map<String, List<String>> categorySubcategoryMap = {
+    "Business": [
+      "All", "Company (ROC)", "Filings", "Directors",
+      "Shares", "Charges", "Affidavits", "Contracts"
+    ],
+    "Real Estate": [
+      "All", "Lease/Rent", "Transfer/Deed", "Mortgage/Loan",
+      "Survey/Planning", "Taxes/Stamp Duty", "Approvals"
+    ],
+    "Personal": [
+      "All", "Passports", "Visas", "NIC", "Clearance"
+    ],
+    "Legal": [
+      "All", "RTI Requests", "RTI Decisions", "RTI Appeals", "RTI Registers"
+    ],
+    "HR": [
+      "All", "EPF Registration", "EPF Claims", "EPF Member Details", "Refunds"
+    ],
+  };
 
-  final List<Map<String, dynamic>> allTemplates = [
-    {
-      "title": "Employment Offer Letter",
-      "category": "HR",
-      "color": Colors.blue,
-      "icon": Icons.work_outline_rounded,
-    },
-    {
-      "title": "Power of Attorney",
-      "category": "Legal",
-      "color": Colors.purple,
-      "icon": Icons.gavel_rounded,
-    },
-    {
-      "title": "Vehicle Sale Deed",
-      "category": "Personal",
-      "color": Colors.green,
-      "icon": Icons.directions_car_filled_rounded,
-    },
-    {
-      "title": "Freelance Contract",
-      "category": "Business",
-      "color": Colors.orange,
-      "icon": Icons.design_services_rounded,
-    },
-    {
-      "title": "Partnership Deed",
-      "category": "Business",
-      "color": Colors.indigo,
-      "icon": Icons.handshake_rounded,
-    },
-    {
-      "title": "Lease Agreement",
-      "category": "Real Estate",
-      "color": Colors.teal,
-      "icon": Icons.apartment_rounded,
-    },
-  ];
+  // Keep track of the selected sub-category index for each main category natively
+  Map<String, int> selectedSubCategoryIndices = {
+    "Business": 0,
+    "Real Estate": 0,
+    "Personal": 0,
+    "Legal": 0,
+    "HR": 0,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +132,7 @@ class _DocumentTemplatesScreenState extends State<DocumentTemplatesScreen> {
                 children: [
                   const SizedBox(height: 24),
 
-                  // Categories
+                  // Main Categories
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
@@ -176,6 +146,11 @@ class _DocumentTemplatesScreenState extends State<DocumentTemplatesScreen> {
                             onTap: () {
                               setState(() {
                                 selectedCategoryIndex = index;
+                                // We don't necessarily need to reset subcategory to 0, 
+                                // but we can if that's the desired UX. 
+                                // Current UX standard preserves context per tab or resets it.
+                                // We will reset it to 0 per tab switch to guarantee "All" view initially.
+                                selectedSubCategoryIndices[categories[index]] = 0;
                               });
                             },
                             child: AnimatedContainer(
@@ -220,6 +195,39 @@ class _DocumentTemplatesScreenState extends State<DocumentTemplatesScreen> {
                     ),
                   ),
 
+                  // Dynamic Sub-Category Row
+                  Builder(builder: (context) {
+                    final currentMainCat = categories[selectedCategoryIndex];
+                    final currentSubCats = categorySubcategoryMap[currentMainCat];
+                    
+                    if (currentSubCats == null || currentSubCats.isEmpty) {
+                      return const SizedBox.shrink(); // "All" doesn't have subcats usually, but we mapped it to nothing
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: List.generate(currentSubCats.length, (index) {
+                            final isSelected = selectedSubCategoryIndices[currentMainCat] == index;
+                            return _buildSubCategoryChip(
+                              label: currentSubCats[index],
+                              isSelected: isSelected,
+                              onTap: () {
+                                setState(() {
+                                  selectedSubCategoryIndices[currentMainCat] = index;
+                                });
+                              },
+                            );
+                          }),
+                        ),
+                      ),
+                    );
+                  }),
+
                   const SizedBox(height: 30),
 
                   // Featured Section
@@ -235,114 +243,169 @@ class _DocumentTemplatesScreenState extends State<DocumentTemplatesScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    height: 180,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: featuredTemplates.length,
-                      itemBuilder: (context, index) {
-                        final template = featuredTemplates[index];
-                        return Container(
-                          width: 260,
-                          margin: const EdgeInsets.only(right: 16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                (template['color'] as Color),
-                                (template['color'] as Color).withOpacity(0.8),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    (template['color'] as Color).withOpacity(0.4),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                right: -20,
-                                bottom: -20,
-                                child: Icon(
-                                  template['icon'],
-                                  size: 120,
-                                  color: Colors.white.withOpacity(0.2),
+                  
+                  Builder(builder: (context) {
+                    List<TemplateModel> featuredList = TemplateData.genericFeaturedTemplates;
+                    
+                    switch (categories[selectedCategoryIndex]) {
+                      case "Business":
+                        featuredList = TemplateData.rocFeaturedTemplates;
+                        break;
+                      case "Real Estate":
+                        featuredList = TemplateData.realEstateFeaturedTemplates;
+                        break;
+                      case "Personal":
+                        featuredList = TemplateData.personalFeaturedTemplates;
+                        break;
+                      case "Legal":
+                        featuredList = TemplateData.legalFeaturedTemplates;
+                        break;
+                      case "HR":
+                        featuredList = TemplateData.hrFeaturedTemplates;
+                        break;
+                    }
+
+                    return SizedBox(
+                      height: 180,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: featuredList.length,
+                        itemBuilder: (context, index) {
+                          final template = featuredList[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TemplatePreviewScreen(template: template),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            template['category'],
-                                            style: GoogleFonts.inter(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          template['title'],
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            height: 1.2,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.download_rounded,
-                                          color: Colors.white70,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          template['downloads'],
-                                          style: GoogleFonts.inter(
-                                            color: Colors.white,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                              );
+                            },
+                            child: Container(
+                              width: 260,
+                              margin: const EdgeInsets.only(right: 16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    template.color,
+                                    template.color.withOpacity(0.8),
                                   ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: template.color.withOpacity(0.4),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    right: -20,
+                                    bottom: -20,
+                                    child: Icon(
+                                      template.icon,
+                                      size: 120,
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                      horizontal: 10, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.2),
+                                                    borderRadius: BorderRadius.circular(20),
+                                                  ),
+                                                  child: Text(
+                                                    template.category,
+                                                    style: GoogleFonts.inter(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (template.sourceAcronym != null) ...[
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                        horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: AppTheme.accentColor.withOpacity(0.9),
+                                                      borderRadius: BorderRadius.circular(20),
+                                                    ),
+                                                    child: Text(
+                                                      template.sourceAcronym!,
+                                                      style: GoogleFonts.inter(
+                                                        color: AppTheme.primaryColor,
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ]
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              template.title,
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.2,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.download_rounded,
+                                              color: Colors.white70,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              template.downloads ?? "1k+",
+                                              style: GoogleFonts.inter(
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }),
 
                   const SizedBox(height: 30),
 
@@ -360,132 +423,220 @@ class _DocumentTemplatesScreenState extends State<DocumentTemplatesScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
-                        // Filter button or similar could go here
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Grid View
-                  GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.85,
-                    ),
-                    itemCount: allTemplates.length,
-                    itemBuilder: (context, index) {
-                      final template = allTemplates[index];
-                       if (selectedCategoryIndex != 0 &&
-                          categories[selectedCategoryIndex] != template['category']) {
-                        return const SizedBox.shrink(); // Simple filter hack (better: filter list before builder)
-                      }
+                  // Get the filtered list of templates based on selected category & subcategory
+                  Builder(builder: (context) {
+                    List<TemplateModel> filteredTemplates = TemplateData.allTemplates;
+                    
+                    if (selectedCategoryIndex != 0) {
+                      final mainCat = categories[selectedCategoryIndex];
+                      filteredTemplates = filteredTemplates.where((t) => t.category == mainCat).toList();
                       
-                      // Handle the case where item is filtered out to avoid whitespace gaps in grid
-                      // In a real app we would filter the list first.
-                      if (selectedCategoryIndex != 0 && categories[selectedCategoryIndex] != template['category']) {
-                         // This returns empty space in grid cell which is ugly, but strict 'if' logic 
-                         // requires re-calculating the list. For this task I will just hide it 
-                         // or ideally I should filter the list above.
-                         // Let's filter the list properly. 
-                         // Refactored below.
-                         return Container();
+                      final currentSubCats = categorySubcategoryMap[mainCat];
+                      if (currentSubCats != null) {
+                        final selectedIndex = selectedSubCategoryIndices[mainCat] ?? 0;
+                        if (selectedIndex != 0) {
+                          final subCat = currentSubCats[selectedIndex];
+                          filteredTemplates = filteredTemplates.where((t) => t.subCategory == subCat).toList();
+                        }
                       }
+                    }
 
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.08),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
+                    if (filteredTemplates.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                        child: Center(
+                          child: Text("No templates found in this category."),
                         ),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                          child: InkWell(
-                            onTap: () {},
+                      );
+                    }
+
+                    return GridView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.82,
+                      ),
+                      itemCount: filteredTemplates.length,
+                      itemBuilder: (context, index) {
+                        final template = filteredTemplates[index];
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: (template['color'] as Color)
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      template['icon'],
-                                      color: template['color'],
-                                      size: 28,
-                                    ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.08),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => TemplatePreviewScreen(template: template),
                                   ),
-                                  const Spacer(),
-                                  Text(
-                                    template['category'],
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w600,
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: template.color.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(
+                                            template.icon,
+                                            color: template.color,
+                                            size: 24,
+                                          ),
+                                        ),
+                                        // File type tag
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            template.fileType,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        )
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    template['title'],
-                                    style: GoogleFonts.inter(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.textDark,
-                                      height: 1.2,
+                                    const Spacer(),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          template.category,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (template.sourceAcronym != null) ...[
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            "• ${template.sourceAcronym}",
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              color: AppTheme.accentColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ]
+                                      ],
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        "Preview",
-                                        style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      template.title,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textDark,
+                                        height: 1.2,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          "Preview",
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.primaryColor,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 14,
                                           color: AppTheme.primaryColor,
                                         ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Icon(
-                                        Icons.arrow_forward_rounded,
-                                        size: 14,
-                                        color: AppTheme.primaryColor,
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    );
+                  }),
                   const SizedBox(height: 30),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+  // Helper to build a sub-category chip uniformly
+  Widget _buildSubCategoryChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.accentColor.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? AppTheme.accentColor : Colors.grey.shade300,
+            ),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? AppTheme.primaryColor : AppTheme.textDark,
+            ),
+          ),
+        ),
       ),
     );
   }

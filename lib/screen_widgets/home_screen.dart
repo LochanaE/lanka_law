@@ -234,7 +234,7 @@ class HomeScreen extends StatelessWidget {
                               title: "Chat\nHistory",
                               color: Colors.green.shade50,
                               iconColor: Colors.green.shade700,
-                              onTap: () {},
+                              onTap: () => Navigator.pushNamed(context, '/chat_list'),
                             ),
                             _buildFeatureCard(
                               context,

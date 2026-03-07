@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -148,6 +150,60 @@ class AuthService {
       print("Error fetching user role: $e");
     }
     return null;
+  }
+
+  // Upload Profile Picture
+  Future<String?> uploadProfilePicture(File imageFile) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception("User not logged in");
+
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures')
+          .child('${user.uid}.jpg');
+
+      await ref.putFile(imageFile);
+      final downloadUrl = await ref.getDownloadURL();
+
+      await user.updatePhotoURL(downloadUrl);
+      
+      // Update Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({'photoUrl': downloadUrl}, SetOptions(merge: true));
+
+      return downloadUrl;
+    } catch (e) {
+      print("Error uploading profile picture: $e");
+      throw Exception("Failed to upload profile picture");
+    }
+  }
+
+  // Delete Profile Picture
+  Future<void> deleteProfilePicture() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception("User not logged in");
+
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures')
+          .child('${user.uid}.jpg');
+
+      await ref.delete();
+      await user.updatePhotoURL(null);
+
+      // Update Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({'photoUrl': FieldValue.delete()}, SetOptions(merge: true));
+
+    } catch (e) {
+      print("Error deleting profile picture: $e");
+    }
   }
 }
 
