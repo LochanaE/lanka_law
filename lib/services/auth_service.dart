@@ -167,12 +167,11 @@ class AuthService {
       final downloadUrl = await ref.getDownloadURL();
 
       await user.updatePhotoURL(downloadUrl);
-      
+
       // Update Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set({'photoUrl': downloadUrl}, SetOptions(merge: true));
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'photoUrl': downloadUrl,
+      }, SetOptions(merge: true));
 
       return downloadUrl;
     } catch (e) {
@@ -196,11 +195,9 @@ class AuthService {
       await user.updatePhotoURL(null);
 
       // Update Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set({'photoUrl': FieldValue.delete()}, SetOptions(merge: true));
-
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'photoUrl': FieldValue.delete(),
+      }, SetOptions(merge: true));
     } catch (e) {
       print("Error deleting profile picture: $e");
     }

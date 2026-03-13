@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lanka_law/l10n/app_localizations.dart';
 import 'package:lanka_law/services/language_provider.dart';
+import 'package:lanka_law/services/templates_provider.dart';
 // import 'firebase_options.dart'; // TODO: Run flutterfire configure to generate this file
 
 void main() async {
@@ -43,6 +44,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => TemplatesProvider()),
         Provider<AuthService>(create: (_) => AuthService()),
         ProxyProvider<AuthService, ApiClient>(
           update: (_, auth, __) => ApiClient(auth: auth),

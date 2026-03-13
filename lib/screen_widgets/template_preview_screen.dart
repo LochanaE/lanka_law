@@ -1,69 +1,220 @@
+// lib/screens/template_preview_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lanka_law/theme.dart';
-import 'package:lanka_law/models/template_model.dart';
+import 'package:lanka_law/models/template_item.dart';
+import 'package:provider/provider.dart';
+import 'package:lanka_law/services/templates_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 
-class TemplatePreviewScreen extends StatelessWidget {
-  final TemplateModel template;
+class TemplatePreviewScreen extends StatefulWidget {
+  final TemplateItem template;
 
   const TemplatePreviewScreen({super.key, required this.template});
 
-  Future<void> _launchUrl(BuildContext context, String? urlString) async {
-    if (urlString == null || urlString.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Source URL not available.')),
+  @override
+  State<TemplatePreviewScreen> createState() => _TemplatePreviewScreenState();
+}
+
+class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
+  bool _isLoadingUrl = false;
+  String? _signedUrl;
+
+  bool _isDownloading = false;
+  double _downloadProgress = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSignedUrl();
+  }
+
+  Future<void> _fetchSignedUrl() async {
+    setState(() => _isLoadingUrl = true);
+    try {
+      print(
+        '[TemplatePreview] templateId=${widget.template.id} title=${widget.template.title}',
       );
+      final url = await context.read<TemplatesProvider>().getSignedUrl(
+        widget.template.id.toString(),
+      );
+      print('[TemplatePreview] signedUrl=$url');
+
+      if (!mounted) return;
+      setState(() {
+        _signedUrl = url;
+        _isLoadingUrl = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingUrl = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load document link: $e')),
+      );
+    }
+  }
+
+  Future<void> _launchUrlExternal(
+    BuildContext context,
+    String? urlString,
+  ) async {
+    if (urlString == null || urlString.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('URL not available.')));
       return;
     }
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not launch $url')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not launch $url')));
       }
     }
   }
 
-  void _showMockDownload(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Downloading template...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    Future.delayed(const Duration(seconds: 2), () {
-      if (context.mounted) {
+  String _safeFilename(String title) {
+    return title
+        .replaceAll(RegExp(r'[^a-zA-Z0-9_\- ]'), '')
+        .replaceAll(' ', '_');
+  }
+
+  Future<void> _downloadAndOpenDoc(BuildContext context) async {
+    if (_signedUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('URL not available yet. Please wait.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0.0;
+    });
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+
+      // ✅ correct extension (pdf/doc/docx)
+      final ext = (widget.template.fileType ?? 'pdf').toLowerCase();
+      final fileName =
+          "${_safeFilename(widget.template.title)}_${widget.template.templateCode}.$ext";
+      final savePath = "${dir.path}/$fileName";
+
+      print(
+        '[TemplatePreview] download started url=$_signedUrl savePath=$savePath',
+      );
+
+      await Dio().download(
+        _signedUrl!,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            setState(() => _downloadProgress = received / total);
+          }
+        },
+      );
+
+      if (!mounted) return;
+      setState(() => _isDownloading = false);
+
+      final result = await OpenFilex.open(savePath);
+      if (result.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Template downloaded successfully!'),
-            backgroundColor: Colors.green,
-          ),
+          SnackBar(content: Text('Could not open file: ${result.message}')),
         );
       }
-    });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isDownloading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Download failed: $e')));
+    }
+  }
+
+  void _openPdfViewer(BuildContext context) {
+    if (_signedUrl == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text(widget.template.title),
+            backgroundColor: AppTheme.primaryColor,
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: SfPdfViewer.network(_signedUrl!),
+        ),
+      ),
+    );
+  }
+
+  Color _getColor() {
+    switch (widget.template.mainCategory) {
+      case "Business":
+        return Colors.indigo;
+      case "Real Estate":
+        return Colors.teal;
+      case "Personal":
+        return Colors.orange;
+      case "Legal":
+        return Colors.purple;
+      case "HR":
+        return Colors.blue;
+      default:
+        return AppTheme.primaryColor;
+    }
+  }
+
+  IconData _getIcon() {
+    switch (widget.template.mainCategory) {
+      case "Business":
+        return Icons.business_rounded;
+      case "Real Estate":
+        return Icons.real_estate_agent_rounded;
+      case "Personal":
+        return Icons.person_rounded;
+      case "Legal":
+        return Icons.gavel_rounded;
+      case "HR":
+        return Icons.people_rounded;
+      default:
+        return Icons.description_rounded;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final fileType = (widget.template.fileType ?? "DOCX").toUpperCase();
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(
           "Template Details",
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
-        leading: IOExceptionButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
-          color: Colors.white,
         ),
       ),
       body: SingleChildScrollView(
@@ -71,7 +222,12 @@ class TemplatePreviewScreen extends StatelessWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 40, top: 20),
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 20,
+                bottom: 40,
+                top: 20,
+              ),
               decoration: const BoxDecoration(
                 color: AppTheme.primaryColor,
                 borderRadius: BorderRadius.only(
@@ -84,27 +240,32 @@ class TemplatePreviewScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: template.color.withOpacity(0.15),
+                      color: _getColor().withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      template.icon,
+                      _getIcon(),
                       size: 64,
-                      color: template.color.withOpacity(0.9),
+                      color: _getColor().withOpacity(0.9),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  if (template.sourceAcronym != null)
+                  if ((widget.template.sourceName ?? '').isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         color: AppTheme.accentColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.accentColor.withOpacity(0.5)),
+                        border: Border.all(
+                          color: AppTheme.accentColor.withOpacity(0.5),
+                        ),
                       ),
                       child: Text(
-                        "Sri Lanka ${template.sourceAcronym}",
+                        "Sri Lanka ${(widget.template.sourceName!.length > 15) ? widget.template.sourceName!.split(' ').first : widget.template.sourceName}",
                         style: GoogleFonts.inter(
                           color: AppTheme.accentColor,
                           fontSize: 12,
@@ -113,25 +274,28 @@ class TemplatePreviewScreen extends StatelessWidget {
                       ),
                     ),
                   Text(
-                    template.title,
+                    widget.template.title,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white24,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          template.fileType,
+                          fileType,
                           style: GoogleFonts.inter(
                             color: Colors.white,
                             fontSize: 12,
@@ -141,7 +305,7 @@ class TemplatePreviewScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        template.category + (template.subCategory != null ? " • ${template.subCategory}" : ""),
+                        "${widget.template.mainCategory} • ${widget.template.subCategory}",
                         style: GoogleFonts.inter(
                           color: Colors.white70,
                           fontSize: 14,
@@ -152,7 +316,6 @@ class TemplatePreviewScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -161,9 +324,9 @@ class TemplatePreviewScreen extends StatelessWidget {
                   Text(
                     "Details",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.textDark,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppTheme.textDark,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Container(
@@ -185,82 +348,109 @@ class TemplatePreviewScreen extends StatelessWidget {
                         _DetailRow(
                           icon: Icons.source_rounded,
                           title: "Source",
-                          value: template.sourceName ?? "Standard Template",
+                          value:
+                              widget.template.sourceName ?? "Standard Template",
                         ),
                         const Divider(height: 24),
                         _DetailRow(
                           icon: Icons.format_list_bulleted_rounded,
                           title: "Category",
-                          value: template.category,
+                          value: widget.template.mainCategory.toString(),
                         ),
-                        if (template.downloads != null) ...[
-                          const Divider(height: 24),
-                          _DetailRow(
-                            icon: Icons.download_done_rounded,
-                            title: "Downloads",
-                            value: template.downloads!,
-                          ),
-                        ]
+                        const Divider(height: 24),
+                        const _DetailRow(
+                          icon: Icons.download_done_rounded,
+                          title: "Downloads",
+                          value: "1k+",
+                        ),
                       ],
                     ),
                   ),
-                  
                   const SizedBox(height: 32),
-                  
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (template.fileType == "PDF") {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('In-app PDF viewer would open here.')),
-                          );
-                        } else {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Download file to view the DOC/DOCX template.')),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.visibility_rounded),
-                      label: const Text("Preview Template"),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showMockDownload(context),
-                      icon: const Icon(Icons.download_rounded),
-                      label: const Text("Download"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: AppTheme.primaryColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+
+                  if (_isLoadingUrl)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryColor,
                         ),
                       ),
+                    )
+                  else ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: (_signedUrl == null)
+                            ? null
+                            : () {
+                                if (fileType == "PDF") {
+                                  _openPdfViewer(context);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Preview not supported for DOC/DOCX. Please download to view.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                        icon: const Icon(Icons.visibility_rounded),
+                        label: const Text("Preview Template"),
+                      ),
                     ),
-                  ),
-                  if (template.sourceUrl != null) ...[
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
-                      child: TextButton.icon(
-                        onPressed: () => _launchUrl(context, template.sourceUrl),
-                        icon: const Icon(Icons.open_in_new_rounded),
-                        label: const Text("Open Source Link"),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.blueAccent,
+                      child: OutlinedButton.icon(
+                        onPressed: (_signedUrl == null || _isDownloading)
+                            ? null
+                            : () => _downloadAndOpenDoc(context),
+                        icon: _isDownloading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.download_rounded),
+                        label: Text(
+                          _isDownloading
+                              ? "Downloading... ${(_downloadProgress * 100).toStringAsFixed(0)}%"
+                              : "Download & Open",
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primaryColor,
                           padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: AppTheme.primaryColor),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          textStyle: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
                   ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: (_signedUrl == null)
+                          ? null
+                          : () => _launchUrlExternal(context, _signedUrl),
+                      icon: const Icon(Icons.open_in_browser_rounded),
+                      label: const Text("Open in Browser"),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.blueAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -276,7 +466,11 @@ class _DetailRow extends StatelessWidget {
   final String title;
   final String value;
 
-  const _DetailRow({required this.icon, required this.title, required this.value});
+  const _DetailRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -284,13 +478,7 @@ class _DetailRow extends StatelessWidget {
       children: [
         Icon(icon, color: Colors.grey, size: 20),
         const SizedBox(width: 12),
-        Text(
-          title,
-          style: GoogleFonts.inter(
-            color: Colors.grey.shade600,
-            fontSize: 14,
-          ),
-        ),
+        Text(title, style: GoogleFonts.inter(color: Colors.grey, fontSize: 14)),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -304,29 +492,6 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// Wrapper to prevent issues
-class IOExceptionButton extends StatelessWidget {
-  final Icon icon;
-  final VoidCallback onPressed;
-  final Color color;
-
-  const IOExceptionButton({
-    super.key,
-    required this.icon,
-    required this.onPressed,
-    this.color = Colors.black,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: icon,
-      color: color,
-      onPressed: onPressed,
     );
   }
 }
