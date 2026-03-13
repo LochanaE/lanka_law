@@ -7,7 +7,9 @@ import 'act_card.dart';
 import '../gazette/gazette_filter_chips.dart';
 
 class ActsView extends StatefulWidget {
-  const ActsView({super.key});
+  final String searchQuery;
+
+  const ActsView({super.key, this.searchQuery = ''});
 
   @override
   State<ActsView> createState() => _ActsViewState();
@@ -209,6 +211,14 @@ class _ActsViewState extends State<ActsView> {
             shrinkWrap: true,
             itemCount: groupedActs.length,
             itemBuilder: (context, index) {
+              if (widget.searchQuery.isNotEmpty) {
+                final query = widget.searchQuery.toLowerCase();
+                final group = groupedActs[index];
+                final matchesTitle = group.displayTitle.toLowerCase().contains(query);
+                if (!matchesTitle) {
+                  return const SizedBox.shrink();
+                }
+              }
               return ActCard(group: groupedActs[index]);
             },
           ),

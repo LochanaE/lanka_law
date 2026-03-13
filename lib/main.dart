@@ -10,6 +10,10 @@ import 'package:lanka_law/screen_widgets/document_library_screen.dart';
 import 'package:lanka_law/screen_widgets/document_templates_screen.dart';
 import 'package:lanka_law/screen_widgets/settings_screen.dart';
 import 'package:lanka_law/screen_widgets/welcome_screen.dart';
+import 'package:lanka_law/screens/legal_aid/legal_aid_finder_home.dart';
+import 'package:lanka_law/screens/legal_aid/legal_aid_results_list.dart';
+import 'package:lanka_law/screens/legal_aid/legal_aid_place_detail.dart';
+import 'package:lanka_law/screens/legal_aid/legal_aid_wizard.dart';
 import 'package:lanka_law/theme.dart';
 
 import 'package:lanka_law/services/auth_service.dart';
@@ -23,6 +27,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lanka_law/l10n/app_localizations.dart';
 import 'package:lanka_law/services/language_provider.dart';
 import 'package:lanka_law/services/templates_provider.dart';
+import 'package:lanka_law/services/daily_tip_api_service.dart';
+import 'package:lanka_law/providers/daily_tip_provider.dart';
 // import 'firebase_options.dart'; // TODO: Run flutterfire configure to generate this file
 
 void main() async {
@@ -45,6 +51,11 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => TemplatesProvider()),
+        Provider<DailyTipApiService>(create: (_) => DailyTipApiService()),
+        ChangeNotifierProxyProvider<DailyTipApiService, DailyTipProvider>(
+          create: (context) => DailyTipProvider(context.read<DailyTipApiService>()),
+          update: (_, apiService, previous) => previous ?? DailyTipProvider(apiService),
+        ),
         Provider<AuthService>(create: (_) => AuthService()),
         ProxyProvider<AuthService, ApiClient>(
           update: (_, auth, __) => ApiClient(auth: auth),
@@ -93,6 +104,10 @@ void main() async {
                   "/document_templates": (context) =>
                       const DocumentTemplatesScreen(),
                   "/settings": (context) => const SettingsScreen(),
+                  "/legal_aid_home": (context) => const LegalAidFinderHomeScreen(),
+                  "/legal_aid_results": (context) => const LegalAidResultsListScreen(),
+                  "/legal_aid_detail": (context) => const LegalAidPlaceDetailScreen(),
+                  "/legal_aid_wizard": (context) => const LegalAidWizardScreen(),
                 },
                 debugShowCheckedModeBanner: false,
               );

@@ -18,9 +18,10 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
     "Court Forms",
     "Gazettes",
     "Acts",
-    "Circulars"
+    "Circulars",
   ];
   int selectedCategoryIndex = 0;
+  String searchQuery = '';
 
   final List<Map<String, dynamic>> documents = [
     {
@@ -78,9 +79,9 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
         title: Text(
           "Document Library",
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         backgroundColor: AppTheme.primaryColor,
@@ -107,6 +108,11 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
               children: [
                 const SizedBox(height: 10),
                 TextFormField(
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
                   decoration: InputDecoration(
                     hintText: "Search documents, acts, forms...",
                     hintStyle: GoogleFonts.inter(
@@ -115,7 +121,10 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                     ),
                     filled: true,
                     fillColor: AppTheme.primaryLight,
-                    prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: Colors.white54,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -126,9 +135,15 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppTheme.accentColor, width: 1),
+                      borderSide: const BorderSide(
+                        color: AppTheme.accentColor,
+                        width: 1,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                   ),
                   style: GoogleFonts.inter(color: Colors.white),
                   cursorColor: AppTheme.accentColor,
@@ -136,7 +151,7 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
               ],
             ),
           ),
-          
+
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -144,7 +159,7 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
-                  
+
                   // Categories
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -163,20 +178,28 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
-                                color: isSelected ? AppTheme.primaryColor : Colors.white,
+                                color: isSelected
+                                    ? AppTheme.primaryColor
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(30),
                                 border: Border.all(
-                                  color: isSelected ? AppTheme.primaryColor : Colors.grey.shade200,
+                                  color: isSelected
+                                      ? AppTheme.primaryColor
+                                      : Colors.grey.shade200,
                                 ),
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: AppTheme.primaryColor.withOpacity(0.3),
+                                          color: AppTheme.primaryColor
+                                              .withOpacity(0.3),
                                           blurRadius: 8,
                                           offset: const Offset(0, 4),
-                                        )
+                                        ),
                                       ]
                                     : [],
                               ),
@@ -184,8 +207,12 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                                 categories[index],
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                  color: isSelected ? Colors.white : AppTheme.textDark,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppTheme.textDark,
                                 ),
                               ),
                             ),
@@ -199,9 +226,9 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
 
                   // Content switching logic
                   if (categories[selectedCategoryIndex] == "Gazettes")
-                    const GazettesView()
+                    GazettesView(searchQuery: searchQuery)
                   else if (categories[selectedCategoryIndex] == "Acts")
-                    const ActsView()
+                    ActsView(searchQuery: searchQuery)
                   else ...[
                     // Recent Documents Header
                     Padding(
@@ -211,7 +238,8 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                         children: [
                           Text(
                             "Recent Documents",
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
                                   color: AppTheme.textDark,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -246,8 +274,28 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                         final doc = documents[index];
                         // Filter logic (simple)
                         if (selectedCategoryIndex != 0 &&
-                            categories[selectedCategoryIndex] != doc['category']) {
+                            categories[selectedCategoryIndex] !=
+                                doc['category']) {
                           return const SizedBox.shrink();
+                        }
+
+                        if (searchQuery.isNotEmpty) {
+                          final query = searchQuery.toLowerCase();
+                          final matchesTitle = (doc['title'] as String)
+                              .toLowerCase()
+                              .contains(query);
+                          final matchesCategory = (doc['category'] as String)
+                              .toLowerCase()
+                              .contains(query);
+                          final matchesType = (doc['type'] as String)
+                              .toLowerCase()
+                              .contains(query);
+
+                          if (!matchesTitle &&
+                              !matchesCategory &&
+                              !matchesType) {
+                            return const SizedBox.shrink();
+                          }
                         }
 
                         return Container(
@@ -277,7 +325,8 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                                       width: 50,
                                       height: 50,
                                       decoration: BoxDecoration(
-                                        color: (doc['color'] as Color).withOpacity(0.1),
+                                        color: (doc['color'] as Color)
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Icon(
@@ -289,7 +338,8 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             doc['title'],
@@ -303,7 +353,8 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Wrap(
-                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
                                             spacing: 8,
                                             runSpacing: 4,
                                             children: [
@@ -367,7 +418,7 @@ class _DocumentLibraryScreenState extends State<DocumentLibraryScreen> {
                       },
                     ),
                   ],
-                  
+
                   // Ensure space at bottom
                   const SizedBox(height: 30),
                 ],
@@ -385,7 +436,7 @@ class IOExceptionButton extends StatelessWidget {
   final Icon icon;
   final VoidCallback onPressed;
   final Color color;
-  
+
   const IOExceptionButton({
     super.key,
     required this.icon,
@@ -395,10 +446,6 @@ class IOExceptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: icon,
-      color: color,
-      onPressed: onPressed,
-    );
+    return IconButton(icon: icon, color: color, onPressed: onPressed);
   }
 }

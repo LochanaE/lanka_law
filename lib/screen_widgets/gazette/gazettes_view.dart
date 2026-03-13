@@ -8,7 +8,9 @@ import '../../models/gazette_item.dart';
 import '../../services/gazette_api_service.dart';
 
 class GazettesView extends StatefulWidget {
-  const GazettesView({super.key});
+  final String searchQuery;
+  
+  const GazettesView({super.key, this.searchQuery = ''});
 
   @override
   State<GazettesView> createState() => _GazettesViewState();
@@ -162,6 +164,15 @@ class _GazettesViewState extends State<GazettesView> {
                             shrinkWrap: true,
                             itemCount: regularGazettes.length,
                             itemBuilder: (context, index) {
+                              if (widget.searchQuery.isNotEmpty) {
+                                final query = widget.searchQuery.toLowerCase();
+                                final item = regularGazettes[index];
+                                final matchesTitle = item.title.toLowerCase().contains(query);
+                                final matchesType = item.gazetteType.toLowerCase().contains(query);
+                                if (!matchesTitle && !matchesType) {
+                                  return const SizedBox.shrink();
+                                }
+                              }
                               return RegularGazetteCard(item: regularGazettes[index]);
                             },
                           ),
@@ -177,6 +188,15 @@ class _GazettesViewState extends State<GazettesView> {
                             shrinkWrap: true,
                             itemCount: extraordinaryGazettes.length,
                             itemBuilder: (context, index) {
+                              if (widget.searchQuery.isNotEmpty) {
+                                final query = widget.searchQuery.toLowerCase();
+                                final item = extraordinaryGazettes[index];
+                                final matchesTitle = item.title.toLowerCase().contains(query);
+                                final matchesType = item.gazetteType.toLowerCase().contains(query);
+                                if (!matchesTitle && !matchesType) {
+                                  return const SizedBox.shrink();
+                                }
+                              }
                               return ExtraordinaryGazetteCard(
                                 item: extraordinaryGazettes[index],
                                 selectedYear: _selectedYear,
